@@ -5,17 +5,13 @@ import PackageDescription
 
 let package = Package(
     name: "UndoTracking",
-    products: [
-        // Products define the executables and libraries a package produces, making them visible to other packages.
-        .library(
-            name: "UndoTracking",
-            targets: ["UndoTracking"]),
-    ],
-    targets: [
-        // Targets are the basic building blocks of a package, defining a module or a test suite.
-        // Targets can depend on other targets in this package and products from dependencies.
-        .target(
-            name: "UndoTracking"),
-
+    platforms: [
+        .macOS(.v13),
+        .iOS(.v16)
+    ], products: [
+        .library(name: "UndoTracking", targets: ["UndoTracking"]),
+    ], targets: [
+        .target(name: "UndoTracking", path: "Sources"),
+        .testTarget(name: "Tests", dependencies: ["UndoTracking"], path: "Tests")
     ]
 )
