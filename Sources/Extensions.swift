@@ -18,3 +18,13 @@ extension LocalizedStringResource {
     }
     
 }
+
+
+extension UndoManager {
+    
+    /// Sets the name of the action associated with the Undo or Redo command.
+    public func actionName(_ title: LocalizedStringResource) {
+        self.setActionName(title.localized())
+    }
+    
+}
