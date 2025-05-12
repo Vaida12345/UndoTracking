@@ -9,6 +9,8 @@ import Foundation
 
 
 /// An undo component.
+///
+/// To construct ``UndoComponent``, please refer [here](<doc:BuildUndoComponent>).
 public struct UndoComponent<Target> where Target: AnyObject {
     
     let target: Target
@@ -55,6 +57,8 @@ public struct UndoComponent<Target> where Target: AnyObject {
     
     /// Creates the component with its associated action.
     ///
+    /// To construct ``UndoComponent``, please refer [here](<doc:BuildUndoComponent>).
+    ///
     /// - Parameters:
     ///   - target: The target document.
     ///   - action: A closure for building the action.
@@ -87,6 +91,8 @@ extension UndoComponent {
     }
     
     /// Set the action `withAnimation` block as animated.
+    ///
+    /// The animated components depends on the implementation, but generally, the primary action will be animated.
     public func animated() -> UndoComponent {
         UndoComponent(target: self.target, action: self.action, actionName: self.actionName, animate: true)
     }

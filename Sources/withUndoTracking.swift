@@ -10,6 +10,19 @@ import SwiftUI
 
 
 /// Performs the actions on the `undoManager`.
+///
+/// The `UndoTracking` uses a closure-based structure similar to SwiftUI declaration.
+///
+/// ```swift
+/// withUndoTracking(undoManager) {
+///     document.replace(\.selection, with: [note])
+///         .named("Select \([note])")
+/// }
+/// ```
+///
+/// - Parameters:
+///   - undoManager: Pass the `UndoManager` from the environment.
+///   - builder: The closure consists of the undoable actions.
 public func withUndoTracking<T>(
     _ undoManager: UndoManager?,
     builder: () -> UndoComponent<T>

@@ -8,7 +8,7 @@
 
 /// A protocol providing methods for dealing with undos.
 ///
-/// This protocol does not have any requirement other than being a `class`. However, this protocol provides methods such as ``append(_:to:undoManager:)``.
+/// This protocol does not have any requirement other than being a `class`. However, this protocol provides methods such as ``append(_:to:)``.
 ///
 /// > Example:
 /// > Start by declaring a class that conforms to this protocol
