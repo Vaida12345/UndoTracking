@@ -23,12 +23,13 @@ import SwiftUI
 /// - Parameters:
 ///   - undoManager: Pass the `UndoManager` from the environment.
 ///   - builder: The closure consists of the undoable actions.
+@MainActor
 public func withUndoTracking<T>(
     _ undoManager: UndoManager?,
     builder: () -> UndoComponent<T>
 ) {
-    nonisolated(unsafe) let undoManager = undoManager
-    nonisolated(unsafe) let component = builder()
+    let undoManager = undoManager
+    let component = builder()
     
     if let title = component.actionName {
         undoManager?.setActionName(title.localized())
@@ -42,7 +43,7 @@ public func withUndoTracking<T>(
     }
     
     let _registerUndo: (@escaping () -> UndoComponent<T>) -> Void = { builder in
-        nonisolated(unsafe) let builder = builder
+        let builder = builder
         
         undoManager?.registerUndo(withTarget: component.target) { target in
             withUndoTracking(undoManager) {
