@@ -43,6 +43,7 @@ final class Model: UndoTracking {
 struct Essentials {
     
     @Test
+    @MainActor
     func undo() {
         let undoManager = UndoManager()
         let model = Model()
