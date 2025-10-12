@@ -182,7 +182,7 @@ extension UndoTracking {
 
 extension UndoTracking {
     
-    func reorder<T>(_ keyPath: ReferenceWritableKeyPath<Self, T>, using ids: [T.Element.ID]) -> UndoComponent<Self> where T: MutableCollection & RandomAccessCollection, T.Element: Identifiable & AnyObject {
+    func reorder<T>(_ keyPath: ReferenceWritableKeyPath<Self, T>, using ids: [T.Element.ID]) -> UndoComponent<Self> where T: MutableCollection & RandomAccessCollection, T.Element: Identifiable {
         UndoComponent(target: self) { target, withAnimation, registerUndo in
             let old = target[keyPath: keyPath].map(\.id)
             
@@ -201,7 +201,7 @@ extension UndoTracking {
     }
     
     /// Moves all the elements at the specified offsets to the specified destination offset, preserving ordering.
-    public func move<T>(_ keyPath: ReferenceWritableKeyPath<Self, T>, fromOffsets source: IndexSet, toOffset destination: Int) -> UndoComponent<Self> where T: MutableCollection & RandomAccessCollection, T.Element: Identifiable & AnyObject {
+    public func move<T>(_ keyPath: ReferenceWritableKeyPath<Self, T>, fromOffsets source: IndexSet, toOffset destination: Int) -> UndoComponent<Self> where T: MutableCollection & RandomAccessCollection, T.Element: Identifiable {
         UndoComponent(target: self) { target, withAnimation, registerUndo in
             let ids = target[keyPath: keyPath].map(\.id)
             
