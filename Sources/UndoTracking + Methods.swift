@@ -5,6 +5,8 @@
 //  Created by Vaida on 12/30/24.
 //
 
+import Foundation
+
 
 extension UndoTracking {
     
@@ -171,6 +173,71 @@ extension UndoTracking {
             
             registerUndo {
                 target.replace(keyPath, with: removed)
+            }
+        }
+    }
+    
+}
+
+
+extension UndoTracking {
+    
+    func reorder<T>(_ keyPath: ReferenceWritableKeyPath<Self, T>, using ids: [T.Element.ID]) -> UndoComponent<Self> where T: MutableCollection & RandomAccessCollection, T.Element: Identifiable & AnyObject {
+        UndoComponent(target: self) { target, withAnimation, registerUndo in
+            let old = target[keyPath: keyPath].map(\.id)
+            
+            withAnimation {
+                let order = Dictionary(uniqueKeysWithValues: ids.enumerated().map { ($1, $0) })
+                target[keyPath: keyPath].sort { (a, b) in
+                    guard let ia = order[a.id], let ib = order[b.id] else { return false }
+                    return ia < ib
+                }
+            }
+            
+            registerUndo {
+                target.reorder(keyPath, using: old)
+            }
+        }
+    }
+    
+    /// Moves all the elements at the specified offsets to the specified destination offset, preserving ordering.
+    public func move<T>(_ keyPath: ReferenceWritableKeyPath<Self, T>, fromOffsets source: IndexSet, toOffset destination: Int) -> UndoComponent<Self> where T: MutableCollection & RandomAccessCollection, T.Element: Identifiable & AnyObject {
+        UndoComponent(target: self) { target, withAnimation, registerUndo in
+            let ids = target[keyPath: keyPath].map(\.id)
+            
+            withAnimation {
+                target[keyPath: keyPath].move(fromOffsets: source, toOffset: destination)
+            }
+            registerUndo {
+                target.reorder(keyPath, using: ids)
+            }
+        }
+    }
+    
+    
+    private func insert<T>(inserts: [(T.Index, T.Element)], keyPath: ReferenceWritableKeyPath<Self, T>) -> UndoComponent<Self> where T: MutableCollection & RangeReplaceableCollection, T.Index == Int {
+        UndoComponent(target: self) { target, withAnimation, registerUndo in
+            withAnimation {
+                for tuple in inserts {
+                    target[keyPath: keyPath].insert(tuple.1, at: tuple.0)
+                }
+            }
+            
+            registerUndo {
+                target.remove(keyPath, atOffsets: IndexSet(inserts.map(\.0)))
+            }
+        }
+    }
+    
+    /// Removes all the elements at the specified offsets from the collection.
+    public func remove<T>(_ keyPath: ReferenceWritableKeyPath<Self, T>, atOffsets offsets: IndexSet) -> UndoComponent<Self> where T: RangeReplaceableCollection & MutableCollection, T.Index == Int {
+        UndoComponent(target: self) { target, withAnimation, registerUndo in
+            let removes = offsets.map({ ($0, target[keyPath: keyPath][$0]) })
+            withAnimation {
+                target[keyPath: keyPath].remove(atOffsets: offsets)
+            }
+            registerUndo {
+                target.insert(inserts: removes, keyPath: keyPath)
             }
         }
     }

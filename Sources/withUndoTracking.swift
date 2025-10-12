@@ -27,10 +27,11 @@ import SwiftUI
 @MainActor
 public func withUndoTracking<T>(
     _ undoManager: UndoManager?,
-    builder: () -> UndoComponent<T>
+    builder: () -> UndoComponent<T>?
 ) {
-    let undoManager = undoManager
     let component = builder()
+    
+    guard let component else { return }
     
     if let title = component.actionName {
         undoManager?.setActionName(title.localized())
