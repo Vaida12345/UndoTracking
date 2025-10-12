@@ -130,6 +130,17 @@ extension UndoTracking {
         }
     }
     
+    /// Removes all elements with the given id.
+    ///
+    /// - Warning: All elements with the id matching that of `element` will be removed.
+    ///
+    /// - Parameters:
+    ///   - id: The if to element to be removed.
+    ///   - keyPath: The key path to the array.
+    public func remove<E>(_ id: E.ID, from keyPath: ReferenceWritableKeyPath<Self, Array<E>>) -> UndoComponent<Self> where E: Identifiable {
+        self.removeAll(from: keyPath, where: { $0.id == id })
+    }
+    
     /// Removes the element by matching its id.
     ///
     /// - Warning: All elements with the id matching that of `element` will be removed.
