@@ -40,14 +40,14 @@ extension UndoTracking {
     ///   - keyPath: The key path to the array.
     public func append<E>(contentsOf sequence: some Sequence<E>, to keyPath: ReferenceWritableKeyPath<Self, Array<E>>) -> UndoComponent<Self> {
         UndoComponent(target: self) { target, withAnimation, registerUndo in
-            let index = target[keyPath: keyPath].count
-            
+            let elements = Array(sequence)
+
             withAnimation {
-                target[keyPath: keyPath].append(contentsOf: sequence)
+                target[keyPath: keyPath].append(contentsOf: elements)
             }
-            
+
             registerUndo {
-                target.remove(at: index, from: keyPath)
+                target.removeLast(elements.count, from: keyPath)
             }
         }
     }
@@ -161,7 +161,7 @@ extension UndoTracking {
     ///   - keyPath: The key path to the array.
     public func removeLast<E>(_ k: Int, from keyPath: ReferenceWritableKeyPath<Self, Array<E>>) -> UndoComponent<Self> {
         UndoComponent(target: self) { target, withAnimation, registerUndo in
-            let removed = target[keyPath: keyPath][(target[keyPath: keyPath].count - 1 - k)..<target[keyPath: keyPath].count]
+            let removed = target[keyPath: keyPath][(target[keyPath: keyPath].count - k)..<target[keyPath: keyPath].count]
             withAnimation {
                 target[keyPath: keyPath].removeLast(k)
             }
@@ -172,6 +172,25 @@ extension UndoTracking {
         }
     }
     
+    /// Replace the element at the specified index.
+    ///
+    /// - Parameters:
+    ///   - keyPath: The key path to the array.
+    ///   - index: The index of the element to replace.
+    ///   - newValue: The new value to set at the index.
+    public func replace<T>(_ keyPath: ReferenceWritableKeyPath<Self, Array<T>>, at index: Int, with newValue: T) -> UndoComponent<Self> {
+        UndoComponent(target: self) { target, withAnimation, registerUndo in
+            let removed = target[keyPath: keyPath][index]
+            withAnimation {
+                target[keyPath: keyPath][index] = newValue
+            }
+
+            registerUndo {
+                target.replace(keyPath, at: index, with: removed)
+            }
+        }
+    }
+
     /// Replace the value indicated by the `keyPath` with the `newValue`
     ///
     /// - Precondition: You need to ensure the `T` is a `struct`.
@@ -193,7 +212,7 @@ extension UndoTracking {
 
 extension UndoTracking {
     
-    func reorder<T>(_ keyPath: ReferenceWritableKeyPath<Self, T>, using ids: [T.Element.ID]) -> UndoComponent<Self> where T: MutableCollection & RandomAccessCollection, T.Element: Identifiable {
+    private func reorder<T>(_ keyPath: ReferenceWritableKeyPath<Self, T>, using ids: [T.Element.ID]) -> UndoComponent<Self> where T: MutableCollection & RandomAccessCollection, T.Element: Identifiable {
         UndoComponent(target: self) { target, withAnimation, registerUndo in
             let old = target[keyPath: keyPath].map(\.id)
             

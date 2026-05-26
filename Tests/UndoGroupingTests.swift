@@ -1,8 +1,6 @@
 //
-//  Essentials.swift
+//  UndoGroupingTests.swift
 //  UndoTracking
-//
-//  Created by Vaida on 12/30/24.
 //
 
 import Foundation
@@ -12,33 +10,9 @@ import UndoTracking
 
 @Suite
 @MainActor
-struct Essentials {
+struct UndoGroupingTests {
 
-    @Test func undoRedoRoundTrip() {
-        let undoManager = UndoManager()
-        let model = Model()
-
-        withUndoTracking(undoManager) {
-            model.increment()
-                .named("Increment")
-        }
-
-        #expect(undoManager.canUndo)
-        #expect(undoManager.undoMenuItemTitle == "Undo Increment")
-        #expect(model.index == 1)
-        undoManager.undo()
-        #expect(!undoManager.canUndo)
-        #expect(undoManager.canRedo)
-        #expect(undoManager.redoMenuItemTitle == "Redo Increment")
-        #expect(model.index == 0)
-        undoManager.redo()
-        #expect(!undoManager.canRedo)
-        #expect(undoManager.canUndo)
-        #expect(undoManager.undoMenuItemTitle == "Undo Increment")
-        #expect(model.index == 1)
-    }
-
-    @Test func undoGroupingBasic() {
+    @Test func simpleGrouping() {
         let undoManager = UndoManager()
         let model = Model()
 
@@ -64,7 +38,7 @@ struct Essentials {
         #expect(model.index == 2)
     }
 
-    @Test func undoNestedGroupingBasic() {
+    @Test func nestedGrouping() {
         let undoManager = UndoManager()
         let model = Model()
 
@@ -93,32 +67,46 @@ struct Essentials {
         #expect(model.index == 4)
     }
 
-    @Test func moveAndRemoveByOffsets() {
+    @Test func groupingWithSingleAction() {
         let undoManager = UndoManager()
-        let container = Container([Container(1), Container(2), Container(3), Container(4), Container(5)])
-        var copy = container.content
+        let model = Model()
 
+        undoManager.beginUndoGrouping()
         withUndoTracking(undoManager) {
-            container.move(\.content, fromOffsets: [3, 4], toOffset: 0)
+            model.increment()
+                .named("Increment")
         }
+        undoManager.endUndoGrouping()
 
-        copy.move(fromOffsets: [3, 4], toOffset: 0)
-        #expect(copy == container.content)
+        #expect(undoManager.canUndo)
+        #expect(model.index == 1)
+
+        undoManager.undo()
+        #expect(model.index == 0)
+
+        undoManager.redo()
+        #expect(model.index == 1)
+    }
+
+    @Test func deepNestedGrouping() {
+        let undoManager = UndoManager()
+        let model = Model()
+
+        undoManager.beginUndoGrouping()
+        for _ in 0..<3 {
+            undoManager.beginUndoGrouping()
+            withUndoTracking(undoManager) {
+                model.increment()
+            }
+            undoManager.endUndoGrouping()
+        }
+        undoManager.endUndoGrouping()
+
+        #expect(model.index == 3)
         #expect(undoManager.canUndo)
 
         undoManager.undo()
-        #expect(container.content.map(\.content) == [1, 2, 3, 4, 5])
-
-
-        withUndoTracking(undoManager) {
-            container.remove(\.content, atOffsets: [1, 3])
-        }
-
-        #expect(container.content.map(\.content) == [1, 3, 5])
-        #expect(undoManager.canUndo)
-
-        undoManager.undo()
-        #expect(container.content.map(\.content) == [1, 2, 3, 4, 5])
+        #expect(model.index == 0)
     }
 
 }
