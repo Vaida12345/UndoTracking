@@ -89,7 +89,9 @@ extension UndoTracking {
             }
             
             withAnimation {
-                target[keyPath: keyPath].removeAll(where: shouldBeRemoved)
+                for index in removed.map(\.0).reversed() {
+                    target[keyPath: keyPath].remove(at: index)
+                }
             }
             
             registerUndo {

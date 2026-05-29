@@ -31,7 +31,8 @@ public struct UndoGroup<T: _UndoComponentProtocol>: _UndoComponentProtocol {
     }
     
     public func _execute(undoManager: UndoManager?, context: _UndoComponentContext) {
-        guard !self._isEmpty else { return }
+        let contents = builder()
+        guard !contents._isEmpty else { return }
 
         var context = context
         if context.title == nil {
@@ -45,7 +46,7 @@ public struct UndoGroup<T: _UndoComponentProtocol>: _UndoComponentProtocol {
 
         undoManager?.beginUndoGrouping()
         // - Important: `context` is used both ways by the children.
-        builder()._execute(undoManager: undoManager, context: context)
+        contents._execute(undoManager: undoManager, context: context)
         undoManager?.endUndoGrouping()
     }
     

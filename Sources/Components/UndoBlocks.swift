@@ -48,6 +48,7 @@ public struct _ArrayComponent<T: _UndoComponentProtocol>: _UndoComponentProtocol
 
     public func _execute(undoManager: UndoManager?, context: _UndoComponentContext) {
         for item in content {
+            guard !item._isEmpty else { continue }
             item._execute(undoManager: undoManager, context: context)
         }
     }
