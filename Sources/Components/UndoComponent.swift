@@ -55,7 +55,7 @@ public struct UndoComponent<Target> where Target: AnyObject {
     /// Returns an empty component.
     ///
     /// Use this method when an empty action is required.
-    public static func empty(target: Target) -> UndoComponent {
+    public static func empty(_ target: Target) -> UndoComponent {
         UndoComponent(target: target, action: { _, _, _ in }, actionName: nil, animate: nil, _isEmpty: true)
     }
     
