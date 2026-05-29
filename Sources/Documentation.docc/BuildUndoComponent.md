@@ -43,8 +43,6 @@ final class Counter: UndoTracking {
 > Closure Capture:
 > Closures capture variables on `withUndoTracking` execution time, [read more](<doc:ClosureCapture>).
 
-- Warning: Keep the closures free of side-effects. 
-
 ---
 
 ## Using UndoComponent

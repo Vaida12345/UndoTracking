@@ -29,5 +29,5 @@ public func withUndoTracking<T: _UndoComponentProtocol>(
     _ undoManager: UndoManager?,
     builder: @escaping () -> T?
 ) {
-    builder()?._execute(undoManager: undoManager, context: _UndoComponentContext())
+    builder()?._makeExecutable()._execute(undoManager: undoManager, context: _UndoComponentContext())
 }

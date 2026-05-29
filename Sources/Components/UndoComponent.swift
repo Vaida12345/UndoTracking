@@ -92,7 +92,11 @@ extension UndoComponent {
 }
 
 
-extension UndoComponent: _UndoComponentProtocol {
+extension UndoComponent: _UndoComponentProtocol, _UndoExecutableProtocol {
+    
+    public func _makeExecutable() -> some _UndoExecutableProtocol {
+        self
+    }
     
     public var _isEmpty: Bool {
         false

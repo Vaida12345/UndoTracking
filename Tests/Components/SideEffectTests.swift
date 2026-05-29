@@ -38,7 +38,7 @@ struct SideEffectTests {
         )
 
         #expect(callCount == 0)
-        group._execute(undoManager: undoManager, context: _UndoComponentContext())
+        group._makeExecutable()._execute(undoManager: undoManager, context: _UndoComponentContext())
         #expect(callCount == 1)
         #expect(model.index == 1)
     }
@@ -59,7 +59,7 @@ struct SideEffectTests {
         )
 
         #expect(callCount == 0)
-        group._execute(undoManager: undoManager, context: _UndoComponentContext())
+        group._makeExecutable()._execute(undoManager: undoManager, context: _UndoComponentContext())
         #expect(callCount == 1)
         #expect(undoManager.canUndo == false)
     }
@@ -114,7 +114,7 @@ struct SideEffectTests {
         // Wrap in a _ConditionalComponent and call _execute directly.
         // _ConditionalComponent._execute does not pre-filter via _isEmpty.
         let conditional = _ConditionalComponent(content: group)
-        conditional._execute(undoManager: undoManager, context: _UndoComponentContext())
+        conditional._makeExecutable()._execute(undoManager: undoManager, context: _UndoComponentContext())
         #expect(callCount == 1)
         #expect(model.index == 1)
     }
@@ -136,7 +136,7 @@ struct SideEffectTests {
         )
 
         let array = _ArrayComponent(content: [group])
-        array._execute(undoManager: undoManager, context: _UndoComponentContext())
+        array._makeExecutable()._execute(undoManager: undoManager, context: _UndoComponentContext())
         #expect(callCount == 1)
         #expect(model.index == 1)
     }
@@ -195,12 +195,10 @@ struct SideEffectTests {
         #expect(outerCount == 0)
         #expect(innerCount == 0)
 
-        outer._execute(undoManager: undoManager, context: _UndoComponentContext())
+        outer._makeExecutable()._execute(undoManager: undoManager, context: _UndoComponentContext())
 
         #expect(outerCount == 1)
-        withKnownIssue("nested groups can execute inner group twice, once in outergroup execute -> builder(), and once in innererGroup _execute -> builder().") {
-            #expect(innerCount == 1)
-        }
+        #expect(innerCount == 1)
         #expect(model.index == 1)
     }
 

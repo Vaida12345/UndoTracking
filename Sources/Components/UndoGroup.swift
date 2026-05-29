@@ -30,33 +30,42 @@ public struct UndoGroup<T: _UndoComponentProtocol>: _UndoComponentProtocol {
         self.animated = animated
     }
     
-    public func _execute(undoManager: UndoManager?, context: _UndoComponentContext) {
-        let contents = builder()
-        let isNestedGroup = context.insideGroup
-        
-        guard isNestedGroup || !contents._isEmpty else { return }
-
-        var context = context
-        if context.title == nil {
-            context.title = self.title ?? "" // parent title take priority
-            // defaults to empty string when `self` has no title, as undo title must be the same within the same group.
-        }
-        
-        if let animated = self.animated {
-            context.animated = animated // self animation take priority.
-        }
-        
-        if !isNestedGroup { undoManager?.beginUndoGrouping() }
-        
-        context.insideGroup = true
-        // - Important: `context` is used both ways by the children.
-        contents._execute(undoManager: undoManager, context: context)
-        
-        if !isNestedGroup { undoManager?.endUndoGrouping() }
+    public func _makeExecutable() -> _UndoExecutable {
+        _UndoExecutable(title: self.title, contents: self.builder()._makeExecutable(), animated: self.animated)
     }
     
-    public var _isEmpty: Bool {
-        self.builder()._isEmpty
+    public struct _UndoExecutable: _UndoExecutableProtocol {
+        let title: LocalizedStringResource?
+        let contents: T._UndoExecutable
+        let animated: Bool?
+        
+        public func _execute(undoManager: UndoManager?, context: _UndoComponentContext) {
+            let isNestedGroup = context.insideGroup
+            
+            guard isNestedGroup || !self.contents._isEmpty else { return }
+            
+            var context = context
+            if context.title == nil {
+                context.title = self.title ?? "" // parent title take priority
+                                                 // defaults to empty string when `self` has no title, as undo title must be the same within the same group.
+            }
+            
+            if let animated = self.animated {
+                context.animated = animated // self animation take priority.
+            }
+            
+            if !isNestedGroup { undoManager?.beginUndoGrouping() }
+            
+            context.insideGroup = true
+            // - Important: `context` is used both ways by the children.
+            self.contents._execute(undoManager: undoManager, context: context)
+            
+            if !isNestedGroup { undoManager?.endUndoGrouping() }
+        }
+        
+        public var _isEmpty: Bool {
+            self.contents._isEmpty
+        }
     }
 }
 
