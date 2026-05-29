@@ -47,7 +47,7 @@ public func withUndoTracking<T>(
     let _registerUndo: (@escaping () -> UndoComponent<T>) -> Void = { builder in
         let builder = builder
         
-        undoManager?.registerUndo(withTarget: component.target) { target in
+        undoManager?.registerUndo(withTarget: component.target) { [weak undoManager] target in
             withUndoTracking(undoManager) {
                 component.replacingAction(with: builder().action)
             }
@@ -78,7 +78,7 @@ public func withUndoTracking<T>(
     let _registerUndo: (@escaping () -> UndoComponent<T>) -> Void = { builder in
         nonisolated(unsafe) let builder = builder
         
-        undoManager?.registerUndo(withTarget: component.target) { target in
+        undoManager?.registerUndo(withTarget: component.target) { [weak undoManager] target in
             withUndoTracking(undoManager) {
                 component.replacingAction(with: builder().action)
             }
