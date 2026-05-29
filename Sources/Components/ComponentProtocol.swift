@@ -11,6 +11,7 @@ import Foundation
 public protocol _UndoComponentProtocol {
     
     /// Make and cache executable, see `UndoGroup` for how it is used.
+    @MainActor
     func _makeExecutable() -> _UndoExecutable
     
     associatedtype _UndoExecutable: _UndoExecutableProtocol

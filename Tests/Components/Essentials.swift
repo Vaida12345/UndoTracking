@@ -891,6 +891,7 @@ struct RetainTests {
         var index: Int = 0
         
         
+        @MainActor
         func increment() -> UndoComponent<DeallocSentinel> {
             UndoComponent(target: self) { target, withAnimation, registerUndo in
                 withAnimation {
@@ -902,6 +903,7 @@ struct RetainTests {
             }
         }
         
+        @MainActor
         func decrement() -> UndoComponent<DeallocSentinel> {
             UndoComponent(target: self) { target, withAnimation, registerUndo in
                 withAnimation {
@@ -913,4 +915,57 @@ struct RetainTests {
             }
         }
     }
+}
+
+
+@MainActor
+@Suite
+struct ActorTests {
+    
+    @Test func assertMainActor() {
+        let manager = UndoManager()
+        let model = Model()
+        
+        withUndoTracking(manager) {
+            model.increment()
+        }
+        
+        manager.undo()
+        manager.redo()
+    }
+    
+    final class Model: @unchecked Sendable {
+        
+        var index: Int = 0
+        
+        
+        @MainActor
+        func increment() -> UndoComponent<Model> {
+            UndoComponent(target: self) { target, withAnimation, registerUndo in
+                withAnimation {
+                    target.index += 1
+                    MainActor.assertIsolated()
+                }
+                registerUndo {
+                    MainActor.assertIsolated()
+                    return target.decrement()
+                }
+            }
+        }
+        
+        @MainActor
+        func decrement() -> UndoComponent<Model> {
+            UndoComponent(target: self) { target, withAnimation, registerUndo in
+                withAnimation {
+                    target.index -= 1
+                    MainActor.assertIsolated()
+                }
+                registerUndo {
+                    MainActor.assertIsolated()
+                    return target.increment()
+                }
+            }
+        }
+    }
+    
 }

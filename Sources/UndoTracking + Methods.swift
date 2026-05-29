@@ -17,7 +17,7 @@ extension UndoTracking {
     /// - Parameters:
     ///   - newElement: The element to append to the array.
     ///   - keyPath: The key path to the array.
-    public func append<E>(_ newElement: E, to keyPath: ReferenceWritableKeyPath<Self, Array<E>>) -> UndoComponent<Self> {
+    @MainActor public func append<E>(_ newElement: E, to keyPath: ReferenceWritableKeyPath<Self, Array<E>>) -> UndoComponent<Self> {
         UndoComponent(target: self) { target, withAnimation, registerUndo in
             let index = target[keyPath: keyPath].count
             
@@ -38,7 +38,7 @@ extension UndoTracking {
     /// - Parameters:
     ///   - sequence: The elements to append to the array.
     ///   - keyPath: The key path to the array.
-    public func append<E>(contentsOf sequence: some Sequence<E>, to keyPath: ReferenceWritableKeyPath<Self, Array<E>>) -> UndoComponent<Self> {
+    @MainActor public func append<E>(contentsOf sequence: some Sequence<E>, to keyPath: ReferenceWritableKeyPath<Self, Array<E>>) -> UndoComponent<Self> {
         UndoComponent(target: self) { target, withAnimation, registerUndo in
             let elements = Array(sequence)
 
@@ -60,7 +60,7 @@ extension UndoTracking {
     ///   - newElement: The element to append to the array.
     ///   - index: The index indicating the position where the `newElement` is inserted.
     ///   - keyPath: The key path to the array.
-    public func insert<E>(_ newElement: E, at index: Int, to keyPath: ReferenceWritableKeyPath<Self, Array<E>>) -> UndoComponent<Self> {
+    @MainActor public func insert<E>(_ newElement: E, at index: Int, to keyPath: ReferenceWritableKeyPath<Self, Array<E>>) -> UndoComponent<Self> {
         UndoComponent(target: self) { target, withAnimation, registerUndo in
             withAnimation {
                 target[keyPath: keyPath].insert(newElement, at: index)
@@ -79,7 +79,7 @@ extension UndoTracking {
     /// - Parameters:
     ///   - keyPath: The key path to the array.
     ///   - shouldBeRemoved: A closure that takes an element of the sequence as its argument and returns a Boolean value indicating whether the element should be removed from the collection.
-    public func removeAll<E>(from keyPath: ReferenceWritableKeyPath<Self, Array<E>>, where shouldBeRemoved: @escaping (E) -> Bool) -> UndoComponent<Self> {
+    @MainActor public func removeAll<E>(from keyPath: ReferenceWritableKeyPath<Self, Array<E>>, where shouldBeRemoved: @escaping (E) -> Bool) -> UndoComponent<Self> {
         UndoComponent(target: self) { target, withAnimation, registerUndo in
             var removed: [(Int, E)] = []
             for tuple in target[keyPath: keyPath].enumerated() {
@@ -101,7 +101,7 @@ extension UndoTracking {
     }
     
     /// Inverse of `removeAll(from:where:)` — re-inserts elements that were removed by a predicate-based removal.
-    private func insert<E>(inserts: [(Int, E)], keyPath: ReferenceWritableKeyPath<Self, Array<E>>, where shouldBeRemoved: @escaping (E) -> Bool) -> UndoComponent<Self> {
+    @MainActor private func insert<E>(inserts: [(Int, E)], keyPath: ReferenceWritableKeyPath<Self, Array<E>>, where shouldBeRemoved: @escaping (E) -> Bool) -> UndoComponent<Self> {
         UndoComponent(target: self) { target, withAnimation, registerUndo in
             withAnimation {
                 for tuple in inserts {
@@ -120,7 +120,7 @@ extension UndoTracking {
     /// - Parameters:
     ///   - index: The index of the removing element.
     ///   - keyPath: The key path to the array.
-    public func remove<E>(at index: Int, from keyPath: ReferenceWritableKeyPath<Self, Array<E>>) -> UndoComponent<Self> {
+    @MainActor public func remove<E>(at index: Int, from keyPath: ReferenceWritableKeyPath<Self, Array<E>>) -> UndoComponent<Self> {
         UndoComponent(target: self) { target, withAnimation, registerUndo in
             let removed = target[keyPath: keyPath][index]
             withAnimation {
@@ -140,7 +140,7 @@ extension UndoTracking {
     /// - Parameters:
     ///   - id: The if to element to be removed.
     ///   - keyPath: The key path to the array.
-    public func remove<E>(_ id: E.ID, from keyPath: ReferenceWritableKeyPath<Self, Array<E>>) -> UndoComponent<Self> where E: Identifiable {
+    @MainActor public func remove<E>(_ id: E.ID, from keyPath: ReferenceWritableKeyPath<Self, Array<E>>) -> UndoComponent<Self> where E: Identifiable {
         self.removeAll(from: keyPath, where: { $0.id == id })
     }
     
@@ -151,7 +151,7 @@ extension UndoTracking {
     /// - Parameters:
     ///   - element: The element to be removed.
     ///   - keyPath: The key path to the array.
-    public func remove<E>(_ element: E, from keyPath: ReferenceWritableKeyPath<Self, Array<E>>) -> UndoComponent<Self> where E: Identifiable {
+    @MainActor public func remove<E>(_ element: E, from keyPath: ReferenceWritableKeyPath<Self, Array<E>>) -> UndoComponent<Self> where E: Identifiable {
         self.removeAll(from: keyPath, where: { $0.id == element.id })
     }
     
@@ -162,7 +162,7 @@ extension UndoTracking {
     /// - Parameters:
     ///   - k: The number of elements to be removed.
     ///   - keyPath: The key path to the array.
-    public func removeLast<E>(_ k: Int, from keyPath: ReferenceWritableKeyPath<Self, Array<E>>) -> UndoComponent<Self> {
+    @MainActor public func removeLast<E>(_ k: Int, from keyPath: ReferenceWritableKeyPath<Self, Array<E>>) -> UndoComponent<Self> {
         UndoComponent(target: self) { target, withAnimation, registerUndo in
             let removed = target[keyPath: keyPath][(target[keyPath: keyPath].count - k)..<target[keyPath: keyPath].count]
             withAnimation {
@@ -181,7 +181,7 @@ extension UndoTracking {
     ///   - keyPath: The key path to the array.
     ///   - index: The index of the element to replace.
     ///   - newValue: The new value to set at the index.
-    public func replace<T>(_ keyPath: ReferenceWritableKeyPath<Self, Array<T>>, at index: Int, with newValue: T) -> UndoComponent<Self> {
+    @MainActor public func replace<T>(_ keyPath: ReferenceWritableKeyPath<Self, Array<T>>, at index: Int, with newValue: T) -> UndoComponent<Self> {
         UndoComponent(target: self) { target, withAnimation, registerUndo in
             let removed = target[keyPath: keyPath][index]
             withAnimation {
@@ -197,7 +197,7 @@ extension UndoTracking {
     /// Replace the value indicated by the `keyPath` with the `newValue`
     ///
     /// - Precondition: You need to ensure the `T` is a `struct`.
-    public func replace<T>(_ keyPath: ReferenceWritableKeyPath<Self, T>, with newValue: T) -> UndoComponent<Self> {
+    @MainActor public func replace<T>(_ keyPath: ReferenceWritableKeyPath<Self, T>, with newValue: T) -> UndoComponent<Self> {
         UndoComponent(target: self) { target, withAnimation, registerUndo in
             let removed = target[keyPath: keyPath]
             withAnimation {
@@ -216,7 +216,7 @@ extension UndoTracking {
 extension UndoTracking {
     
     /// Inverse of `move` — restores the original element order given the IDs in their previous sequence.
-    private func reorder<T>(_ keyPath: ReferenceWritableKeyPath<Self, T>, using ids: [T.Element.ID]) -> UndoComponent<Self> where T: MutableCollection & RandomAccessCollection, T.Element: Identifiable {
+    @MainActor private func reorder<T>(_ keyPath: ReferenceWritableKeyPath<Self, T>, using ids: [T.Element.ID]) -> UndoComponent<Self> where T: MutableCollection & RandomAccessCollection, T.Element: Identifiable {
         UndoComponent(target: self) { target, withAnimation, registerUndo in
             let old = target[keyPath: keyPath].map(\.id)
             
@@ -235,7 +235,7 @@ extension UndoTracking {
     }
     
     /// Moves all the elements at the specified offsets to the specified destination offset, preserving ordering.
-    public func move<T>(_ keyPath: ReferenceWritableKeyPath<Self, T>, fromOffsets source: IndexSet, toOffset destination: Int) -> UndoComponent<Self> where T: MutableCollection & RandomAccessCollection, T.Element: Identifiable {
+    @MainActor public func move<T>(_ keyPath: ReferenceWritableKeyPath<Self, T>, fromOffsets source: IndexSet, toOffset destination: Int) -> UndoComponent<Self> where T: MutableCollection & RandomAccessCollection, T.Element: Identifiable {
         UndoComponent(target: self) { target, withAnimation, registerUndo in
             let ids = target[keyPath: keyPath].map(\.id)
             
@@ -250,7 +250,7 @@ extension UndoTracking {
     
     
     /// Inverse of `remove(atOffsets:)` — re-inserts elements at the offsets from which they were removed.
-    private func insert<T>(inserts: [(T.Index, T.Element)], keyPath: ReferenceWritableKeyPath<Self, T>) -> UndoComponent<Self> where T: MutableCollection & RangeReplaceableCollection, T.Index == Int {
+    @MainActor private func insert<T>(inserts: [(T.Index, T.Element)], keyPath: ReferenceWritableKeyPath<Self, T>) -> UndoComponent<Self> where T: MutableCollection & RangeReplaceableCollection, T.Index == Int {
         UndoComponent(target: self) { target, withAnimation, registerUndo in
             withAnimation {
                 for tuple in inserts {
@@ -265,7 +265,7 @@ extension UndoTracking {
     }
     
     /// Removes all the elements at the specified offsets from the collection.
-    public func remove<T>(_ keyPath: ReferenceWritableKeyPath<Self, T>, atOffsets offsets: IndexSet) -> UndoComponent<Self> where T: RangeReplaceableCollection & MutableCollection, T.Index == Int {
+    @MainActor public func remove<T>(_ keyPath: ReferenceWritableKeyPath<Self, T>, atOffsets offsets: IndexSet) -> UndoComponent<Self> where T: RangeReplaceableCollection & MutableCollection, T.Index == Int {
         UndoComponent(target: self) { target, withAnimation, registerUndo in
             let removes = offsets.map({ ($0, target[keyPath: keyPath][$0]) })
             withAnimation {
