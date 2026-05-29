@@ -26,7 +26,6 @@ final class Counter: UndoTracking {
 ```
 
 
-
 ###  Closure Parameters
 - term target: The target document, as passed from `target` to avoid capture.
 
@@ -39,6 +38,10 @@ final class Counter: UndoTracking {
 - term registerUndo: The block for registering undo. The returned value is executed when `undo()`.
 
     The return component will inherit any attributes set to `self`.
+
+
+> Closure Capture:
+> Closures capture variables on `withUndoTracking` execution time, [read more](<doc:ClosureCapture>).
 
 ---
 

@@ -74,3 +74,8 @@ The protocol providing undoable actions to the attached object.
 The internal representation returned by the undoable actions of ``UndoTracking``.
 - ``UndoComponent-struct``
 - <doc:BuildUndoComponent>
+
+### UndoGroup
+Use the builder to group execution together.
+- ``UndoGroup``
+- ``UndoGroupBuilder``

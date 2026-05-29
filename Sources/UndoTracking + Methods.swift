@@ -98,6 +98,7 @@ extension UndoTracking {
         }
     }
     
+    /// Inverse of `removeAll(from:where:)` — re-inserts elements that were removed by a predicate-based removal.
     private func insert<E>(inserts: [(Int, E)], keyPath: ReferenceWritableKeyPath<Self, Array<E>>, where shouldBeRemoved: @escaping (E) -> Bool) -> UndoComponent<Self> {
         UndoComponent(target: self) { target, withAnimation, registerUndo in
             withAnimation {
@@ -212,6 +213,7 @@ extension UndoTracking {
 
 extension UndoTracking {
     
+    /// Inverse of `move` — restores the original element order given the IDs in their previous sequence.
     private func reorder<T>(_ keyPath: ReferenceWritableKeyPath<Self, T>, using ids: [T.Element.ID]) -> UndoComponent<Self> where T: MutableCollection & RandomAccessCollection, T.Element: Identifiable {
         UndoComponent(target: self) { target, withAnimation, registerUndo in
             let old = target[keyPath: keyPath].map(\.id)
@@ -245,6 +247,7 @@ extension UndoTracking {
     }
     
     
+    /// Inverse of `remove(atOffsets:)` — re-inserts elements at the offsets from which they were removed.
     private func insert<T>(inserts: [(T.Index, T.Element)], keyPath: ReferenceWritableKeyPath<Self, T>) -> UndoComponent<Self> where T: MutableCollection & RangeReplaceableCollection, T.Index == Int {
         UndoComponent(target: self) { target, withAnimation, registerUndo in
             withAnimation {

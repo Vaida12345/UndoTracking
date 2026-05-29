@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import SwiftUI
 
 
 /// Performs the actions on the `undoManager`.
@@ -22,34 +21,13 @@ import SwiftUI
 ///
 /// - Parameters:
 ///   - undoManager: Pass the `UndoManager` from the environment.
-///   - builder: The closure consists of the undoable actions.
+///   - builder: The closure consists of the undoable action.
+///
+/// - Tip: To group components together, use ``UndoGroup``.
 @MainActor
-public func withUndoTracking<T>(
+public func withUndoTracking<T: _UndoComponentProtocol>(
     _ undoManager: UndoManager?,
-    builder: () -> UndoComponent<T>?
+    builder: @escaping () -> T?
 ) {
-    guard let component = builder() else { return }
-    
-    if let title = component.actionName {
-        undoManager?.setActionName(title)
-    }
-    let _withAnimation: (() -> Void) -> Void
-    switch component.animate {
-    case true:
-        _withAnimation = { block in withAnimation(.default, { block() }) }
-    case false:
-        _withAnimation = { $0() }
-    }
-    
-    let _registerUndo: (@escaping () -> UndoComponent<T>) -> Void = { builder in
-        let builder = builder
-        
-        undoManager?.registerUndo(withTarget: component.target) { [weak undoManager] target in
-            withUndoTracking(undoManager) {
-                component.replacingAction(with: builder().action)
-            }
-        }
-    }
-    
-    component.action(component.target, _withAnimation, _registerUndo)
+    builder()?._execute(undoManager: undoManager, context: _UndoComponentContext())
 }
