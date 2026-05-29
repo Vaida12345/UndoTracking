@@ -24,7 +24,7 @@ struct UndoComponentTests {
 
     @Test func emptyComponentIsEmpty() {
         let model = Model()
-        let component = UndoComponent<Model>.empty(target: model)
+        let component = UndoComponent<Model>.empty(model)
         #expect(component._isEmpty)
     }
 
@@ -35,7 +35,7 @@ struct UndoComponentTests {
         let model = Model()
 
         withUndoTracking(undoManager) {
-            UndoComponent<Model>.empty(target: model)
+            UndoComponent<Model>.empty(model)
         }
 
         #expect(model.index == 0)
@@ -46,7 +46,7 @@ struct UndoComponentTests {
 
     @Test func namedPreservesIsEmptyOnEmptyComponent() {
         let model = Model()
-        let component = UndoComponent<Model>.empty(target: model)
+        let component = UndoComponent<Model>.empty(model)
             .named("Test")
         #expect(component._isEmpty)
     }
@@ -62,7 +62,7 @@ struct UndoComponentTests {
 
     @Test func animatedPreservesIsEmptyOnEmptyComponent() {
         let model = Model()
-        let component = UndoComponent<Model>.empty(target: model)
+        let component = UndoComponent<Model>.empty(model)
             .animated()
         #expect(component._isEmpty)
     }
@@ -78,7 +78,7 @@ struct UndoComponentTests {
 
     @Test func emptyComponentChainedModifiersStillEmpty() {
         let model = Model()
-        let component = UndoComponent<Model>.empty(target: model)
+        let component = UndoComponent<Model>.empty(model)
             .named("Whatever")
             .animated(true)
 
@@ -92,7 +92,7 @@ struct UndoComponentTests {
 
         withUndoTracking(undoManager) {
             UndoGroup("Phantom") {
-                UndoComponent<Model>.empty(target: Model())
+                UndoComponent<Model>.empty(Model())
             }
         }
 
@@ -105,7 +105,7 @@ struct UndoComponentTests {
 
         withUndoTracking(undoManager) {
             UndoGroup("Mixed") {
-                UndoComponent<Model>.empty(target: model)
+                UndoComponent<Model>.empty(model)
                 model.increment()
             }
         }
@@ -129,7 +129,7 @@ struct UndoComponentTests {
             target.index = 42
             registerUndo {
                 // No inverse needed — use empty as fallback.
-                UndoComponent<Model>.empty(target: target)
+                UndoComponent<Model>.empty(target)
             }
         }.named("Set")
 
