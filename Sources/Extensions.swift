@@ -12,9 +12,7 @@ extension LocalizedStringResource {
     
     /// Creates the localized String.
     func localized() -> String {
-        var copy = self
-        copy.locale = .current
-        return String(localized: copy)
+        String(localized: self)
     }
     
 }
