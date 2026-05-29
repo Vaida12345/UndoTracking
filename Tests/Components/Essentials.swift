@@ -825,3 +825,92 @@ struct Essentials {
     }
 
 }
+
+@MainActor
+@Suite
+struct RetainTests {
+    
+    @Test func precondition() async throws {
+        try await confirmation { confirm in
+            autoreleasepool {
+                let model = DeallocSentinel { confirm() }
+                let undoManager = UndoManager()
+                withUndoTracking(undoManager) {
+                    model.increment()
+                }
+                
+                _ = consume model
+                _ = consume undoManager
+            }
+            try await Task.sleep(for: .seconds(0.1)) // wait for dealloc
+        }
+    }
+    
+    @Test func retainTest1() async throws {
+        let undoManager = UndoManager()
+        
+        await withKnownIssue("UndoManager is actually keeping a strong reference to the target") {
+            try await confirmation { confirm in
+                autoreleasepool {
+                    let model = DeallocSentinel { confirm() }
+                    withUndoTracking(undoManager) {
+                        model.increment()
+                    }
+                    
+                    _ = consume model
+                }
+                try await Task.sleep(for: .seconds(0.1)) // wait for dealloc
+            }
+        }
+    }
+    
+    @Test func retainTest2() async throws {
+        let undoManager = UndoManager()
+        
+        try await confirmation { confirm in
+            autoreleasepool {
+                let model = DeallocSentinel { confirm() }
+                withUndoTracking(undoManager) {
+                    model.increment()
+                }
+                
+                _ = consume model
+            }
+            undoManager.removeAllActions()
+            try await Task.sleep(for: .seconds(0.1)) // wait for dealloc
+        }
+    }
+    
+    final class DeallocSentinel: @unchecked Sendable {
+        let deinitCall: () -> Void
+        init(deinitCall: @escaping () -> Void) {
+            self.deinitCall = deinitCall
+        }
+        deinit { deinitCall() }
+        
+        var index: Int = 0
+        
+        
+        func increment() -> UndoComponent<DeallocSentinel> {
+            UndoComponent(target: self) { target, withAnimation, registerUndo in
+                withAnimation {
+                    target.index += 1
+                }
+                registerUndo {
+                    target.decrement()
+                }
+            }
+        }
+        
+        func decrement() -> UndoComponent<DeallocSentinel> {
+            UndoComponent(target: self) { target, withAnimation, registerUndo in
+                withAnimation {
+                    target.index -= 1
+                }
+                registerUndo {
+                    target.increment()
+                }
+            }
+        }
+    }
+}
