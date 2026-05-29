@@ -8,21 +8,12 @@
 import Foundation
 
 
-extension LocalizedStringResource {
-    
-    /// Creates the localized String.
-    func localized() -> String {
-        String(localized: self)
-    }
-    
-}
-
-
 extension UndoManager {
     
     /// Sets the name of the action associated with the Undo or Redo command.
+    @available(*, deprecated, renamed: "setActionName")
     public func actionName(_ title: LocalizedStringResource) {
-        self.setActionName(title.localized())
+        self.setActionName(title)
     }
     
 }
