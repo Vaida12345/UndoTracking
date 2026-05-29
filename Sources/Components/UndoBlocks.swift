@@ -14,7 +14,7 @@ public struct _TupleComponent<each T>: _UndoComponentProtocol where repeat each 
     
     public func _execute(undoManager: UndoManager?, context: _UndoComponentContext) {
         for item in repeat each content {
-            guard !item._isEmpty else { continue }
+            // Each child's own _execute handles emptiness internally,
             item._execute(undoManager: undoManager, context: context)
         }
     }
@@ -48,7 +48,7 @@ public struct _ArrayComponent<T: _UndoComponentProtocol>: _UndoComponentProtocol
 
     public func _execute(undoManager: UndoManager?, context: _UndoComponentContext) {
         for item in content {
-            guard !item._isEmpty else { continue }
+            // Each child's own _execute handles emptiness internally,
             item._execute(undoManager: undoManager, context: context)
         }
     }
