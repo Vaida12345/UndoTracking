@@ -25,10 +25,12 @@ public struct UndoComponent<Target> where Target: AnyObject {
     // registerUndo cannot escape, otherwise it is called outside UndoGroup
     // UndoGroup grouping breaks. UndoGroup._execute calls beginUndoGrouping() sync before children, endUndoGrouping() sync after. If a child defers registerUndo into a Task {}, the
     // registration fires after endUndoGrouping() — the undo leaks out of the group as a standalone action.
+    //
+    // makeUndoComponent cannot return nil, otherwise can lead to undoAction with no-op.
 
     
     let actionName: LocalizedStringResource?
-    
+    public let _isEmpty: Bool
     let animate: Bool?
     
     
@@ -40,12 +42,21 @@ public struct UndoComponent<Target> where Target: AnyObject {
             _ registerUndo: @MainActor (_ makeUndoComponent: () -> UndoComponent<Target>) -> Void
         ) -> Void,
         actionName: LocalizedStringResource?,
-        animate: Bool?
+        animate: Bool?,
+        _isEmpty: Bool
     ) {
         self.target = target
         self.action = action
         self.actionName = actionName
         self.animate = animate
+        self._isEmpty = _isEmpty
+    }
+    
+    /// Returns an empty component.
+    ///
+    /// Use this method when an empty action is required.
+    public static func empty(target: Target) -> UndoComponent {
+        UndoComponent(target: target, action: { _, _, _ in }, actionName: nil, animate: nil, _isEmpty: true)
     }
     
     
@@ -69,7 +80,7 @@ public struct UndoComponent<Target> where Target: AnyObject {
             _ registerUndo: @MainActor (_ makeUndoComponent: () -> UndoComponent<Target>) -> Void
         ) -> Void
     ) {
-        self.init(target: target, action: action, actionName: nil, animate: nil)
+        self.init(target: target, action: action, actionName: nil, animate: nil, _isEmpty: false)
     }
     
 }
@@ -81,7 +92,7 @@ extension UndoComponent {
     ///
     /// This sets the name of the action associated with the Undo or Redo command.
     public func named(_ actionName: LocalizedStringResource) -> UndoComponent {
-        UndoComponent(target: self.target, action: self.action, actionName: actionName, animate: self.animate)
+        UndoComponent(target: self.target, action: self.action, actionName: actionName, animate: self.animate, _isEmpty: self._isEmpty)
     }
     
     /// Set the action `withAnimation` block as animated.
@@ -90,7 +101,7 @@ extension UndoComponent {
     ///
     /// By default, no animation is applied.
     public func animated(_ bool: Bool = true) -> UndoComponent {
-        UndoComponent(target: self.target, action: self.action, actionName: self.actionName, animate: bool)
+        UndoComponent(target: self.target, action: self.action, actionName: self.actionName, animate: bool, _isEmpty: self._isEmpty)
     }
     
 }
@@ -100,10 +111,6 @@ extension UndoComponent: _UndoComponentProtocol, _UndoExecutableProtocol {
     
     public func _makeExecutable() -> some _UndoExecutableProtocol {
         self
-    }
-    
-    public var _isEmpty: Bool {
-        false
     }
     
     public func _execute(undoManager: UndoManager?, context: _UndoComponentContext) {
@@ -132,7 +139,7 @@ extension UndoComponent: _UndoComponentProtocol, _UndoExecutableProtocol {
             
             undoManager?.registerUndo(withTarget: target) { [weak undoManager] target in
                 // the inverse action carries the same presentation metadata.
-                let component = UndoComponent(target: target, action: action, actionName: self.actionName, animate: self.animate)
+                let component = UndoComponent(target: target, action: action, actionName: self.actionName, animate: self.animate, _isEmpty: self._isEmpty)
                 component._execute(undoManager: undoManager, context: context)
             }
         }

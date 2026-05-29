@@ -96,6 +96,7 @@ public struct _EitherComponent<First: _UndoComponentProtocol, Second: _UndoCompo
         case first(First)
         case second(Second)
         
+        @MainActor
         func _makeExecutable() -> _UndoExecutable.Storage {
             switch self {
             case .first(let first):
