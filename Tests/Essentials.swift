@@ -63,6 +63,48 @@ struct Essentials {
         undoManager.redo()
         #expect(model.index == 2)
     }
+    
+    @Test func undoTwiceNoGroup() {
+        let undoManager = UndoManager()
+        undoManager.groupsByEvent = false
+        let model = Model()
+
+        // undoManager groups events together in the same run loop by default, so needs explicit grouping.
+        undoManager.beginUndoGrouping()
+        withUndoTracking(undoManager) {
+            model.increment()
+                .named("Increment")
+        }
+        undoManager.endUndoGrouping()
+        
+        undoManager.beginUndoGrouping()
+        withUndoTracking(undoManager) {
+            model.increment()
+                .named("Increment")
+        }
+        undoManager.endUndoGrouping()
+
+        #expect(undoManager.canUndo)
+        if #available(macOS 14.4, *) {
+            #expect(undoManager.undoCount == 2)
+        }
+        #expect(undoManager.groupingLevel == 0)
+        #expect(model.index == 2)
+
+        #expect(undoManager.canUndo)
+        undoManager.undo()
+        if #available(macOS 14.4, *) {
+            #expect(undoManager.undoCount == 1)
+        }
+        #expect(model.index == 1)
+        
+        #expect(undoManager.canUndo)
+        undoManager.undo()
+        if #available(macOS 14.4, *) {
+            #expect(undoManager.undoCount == 0)
+        }
+        #expect(model.index == 0)
+    }
 
     @Test func undoNestedGroupingBasic() {
         let undoManager = UndoManager()
