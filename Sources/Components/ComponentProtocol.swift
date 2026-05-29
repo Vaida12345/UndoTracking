@@ -22,6 +22,7 @@ public protocol _UndoComponentProtocol {
 public struct _UndoComponentContext: Sendable, Equatable, CustomStringConvertible {
     var animated: Bool? = nil
     var title: LocalizedStringResource? = nil
+    var insideGroup = false
     
     public var description: String {
         var args: [String] = []

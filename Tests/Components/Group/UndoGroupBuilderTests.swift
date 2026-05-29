@@ -107,6 +107,7 @@ struct UndoGroupBuilderTests {
     
     @Test func testGroundTruth() throws {
         let undoManager = UndoManager()
+        try #require(!undoManager.canUndo)
         undoManager.beginUndoGrouping()
         undoManager.endUndoGrouping()
         try #require(undoManager.canUndo)

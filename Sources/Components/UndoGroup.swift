@@ -32,7 +32,9 @@ public struct UndoGroup<T: _UndoComponentProtocol>: _UndoComponentProtocol {
     
     public func _execute(undoManager: UndoManager?, context: _UndoComponentContext) {
         let contents = builder()
-        guard !contents._isEmpty else { return }
+        let isNestedGroup = context.insideGroup
+        
+        guard isNestedGroup || !contents._isEmpty else { return }
 
         var context = context
         if context.title == nil {
@@ -43,11 +45,14 @@ public struct UndoGroup<T: _UndoComponentProtocol>: _UndoComponentProtocol {
         if let animated = self.animated {
             context.animated = animated // self animation take priority.
         }
-
-        undoManager?.beginUndoGrouping()
+        
+        if !isNestedGroup { undoManager?.beginUndoGrouping() }
+        
+        context.insideGroup = true
         // - Important: `context` is used both ways by the children.
         contents._execute(undoManager: undoManager, context: context)
-        undoManager?.endUndoGrouping()
+        
+        if !isNestedGroup { undoManager?.endUndoGrouping() }
     }
     
     public var _isEmpty: Bool {

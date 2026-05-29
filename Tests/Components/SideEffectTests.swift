@@ -198,7 +198,7 @@ struct SideEffectTests {
         outer._execute(undoManager: undoManager, context: _UndoComponentContext())
 
         #expect(outerCount == 1)
-        withKnownIssue("nested groups can execute inner group twice, once in outergroup execute -> _isEmpty check, and once in innererGroup _execute.") {
+        withKnownIssue("nested groups can execute inner group twice, once in outergroup execute -> builder(), and once in innererGroup _execute -> builder().") {
             #expect(innerCount == 1)
         }
         #expect(model.index == 1)
