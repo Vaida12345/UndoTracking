@@ -27,7 +27,7 @@ import Foundation
 @MainActor
 public func withUndoTracking<T: _UndoComponentProtocol>(
     _ undoManager: UndoManager?,
-    builder: @escaping () -> T?
+    builder: () -> T?
 ) {
     builder()?._makeExecutable()._execute(undoManager: undoManager, context: _UndoComponentContext())
 }

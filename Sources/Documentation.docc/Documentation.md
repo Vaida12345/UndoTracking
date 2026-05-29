@@ -64,7 +64,7 @@ The closuring containing all undo declarations.
 ### Declaration Methods
 The declarative methods attached to undo actions.
 - ``UndoComponent/named(_:)``
-- ``UndoComponent/animated()``
+- ``UndoComponent/animated(_:)``
 
 ### UndoTracking Protocol
 The protocol providing undoable actions to the attached object.
