@@ -17,16 +17,7 @@ public struct UndoComponent<Target> where Target: AnyObject {
     let target: Target
     
     /// An action to be executed when the component is called.
-    let action: @MainActor (
-        _ target: Target,
-        _ withAnimation: @MainActor (_ forwardAction: () -> Void) -> Void,
-        _ registerUndo: @MainActor (_ makeUndoComponent: () -> UndoComponent<Target>) -> Void
-    ) -> Void
-    // registerUndo cannot escape, otherwise it is called outside UndoGroup
-    // UndoGroup grouping breaks. UndoGroup._execute calls beginUndoGrouping() sync before children, endUndoGrouping() sync after. If a child defers registerUndo into a Task {}, the
-    // registration fires after endUndoGrouping() — the undo leaks out of the group as a standalone action.
-    //
-    // makeUndoComponent cannot return nil, otherwise can lead to undoAction with no-op.
+    let action: ActionBlock
 
     
     let actionName: LocalizedStringResource?
@@ -36,11 +27,7 @@ public struct UndoComponent<Target> where Target: AnyObject {
     
     fileprivate init(
         target: Target,
-        action: @escaping @MainActor (
-            _ target: Target,
-            _ withAnimation: @MainActor (_ forwardAction: () -> Void) -> Void,
-            _ registerUndo: @MainActor (_ makeUndoComponent: () -> UndoComponent<Target>) -> Void
-        ) -> Void,
+        action: @escaping ActionBlock,
         actionName: LocalizedStringResource?,
         animate: Bool?,
         _isEmpty: Bool
@@ -74,14 +61,35 @@ public struct UndoComponent<Target> where Target: AnyObject {
     /// - term registerUndo: The block for registering undo. The closure will be executed in `UndoManager.registerUndo(withTarget:handler:)`. The return component will inherit any attributes set to `self`.
     public init(
         target: Target,
-        action: @escaping @MainActor (
-            _ target: Target,
-            _ withAnimation: @MainActor (_ forwardAction: () -> Void) -> Void,
-            _ registerUndo: @MainActor (_ makeUndoComponent: () -> UndoComponent<Target>) -> Void
-        ) -> Void
+        action: @escaping ActionBlock
     ) {
         self.init(target: target, action: action, actionName: nil, animate: nil, _isEmpty: false)
     }
+    
+    /// The callback for creating an action.
+    ///
+    /// ## Parameters
+    /// - term target: The target document, as passed from `target` to avoid capture.
+    ///
+    /// - term withAnimation: The conditional `withAnimation` block.
+    ///
+    ///     Similar to that in `SwiftUI`, functions are executed with animation attached when ``UndoComponent/animated()``.
+    ///
+    ///     You can choose to ignore this parameter if animation is not required.
+    ///
+    /// - term registerUndo: The block for registering undo. The returned value is executed when `undo()`.
+    ///
+    ///     The return component will inherit any attributes set to `self`.
+    public typealias ActionBlock = @MainActor (
+        _ target: Target,
+        _ withAnimation: @MainActor (_ forwardAction: () -> Void) -> Void,
+        _ registerUndo: @MainActor (_ makeUndoComponent: @escaping () -> UndoComponent<Target>) -> Void
+    ) -> Void
+    // registerUndo cannot escape, otherwise it is called outside UndoGroup
+    // UndoGroup grouping breaks. UndoGroup._execute calls beginUndoGrouping() sync before children, endUndoGrouping() sync after. If a child defers registerUndo into a Task {}, the
+    // registration fires after endUndoGrouping() — the undo leaks out of the group as a standalone action.
+    //
+    // makeUndoComponent cannot return nil, otherwise can lead to undoAction with no-op.
     
 }
 
@@ -131,14 +139,14 @@ extension UndoComponent: _UndoComponentProtocol, _UndoExecutableProtocol {
         // the inverse operation with UndoManager. When undo fires, it calls
         // `withUndoTracking` again with the inverse component — so the forward action
         // gets re-registered as the "redo" half.
-        let _registerUndo: @MainActor (_ makeUndoComponent: () -> UndoComponent<Target>) -> Void = { [weak undoManager, weak target] builder in
+        let _registerUndo: @MainActor (_ makeUndoComponent: @escaping () -> UndoComponent<Target>) -> Void = { [weak undoManager, weak target] builder in
             // `[weak undoManager]` prevents a retain cycle: the UndoManager holds a
             // reference to us (via registerUndo), and we hold a reference back.
             guard let target else { return }
-            let action = builder().action // capture values here
             
             undoManager?.registerUndo(withTarget: target) { [weak undoManager] target in
                 // the inverse action carries the same presentation metadata.
+                let action = builder().action // capture values here
                 let component = UndoComponent(target: target, action: action, actionName: self.actionName, animate: self.animate, _isEmpty: self._isEmpty)
                 component._execute(undoManager: undoManager, context: context)
             }

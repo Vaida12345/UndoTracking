@@ -142,6 +142,8 @@ struct EscapingClosureTests {
 
     // MARK: - Reference type state mutation
 
+    /// Reference-type state read inside `makeUndoComponent` is evaluated at undo time.
+    /// Mutating `note.text` before undo changes the restore value from 0 to -1.
     @Test("captured reference state mutated before undo")
     func capturedReferenceStateMutatedBeforeUndo() {
         let undoManager = UndoManager()
@@ -166,8 +168,10 @@ struct EscapingClosureTests {
 
         #expect(model.index == 1)
 
-        cycle(undoManager: undoManager, model: model, redoValue: 1) { note.text = "changed" }
-        cycle(undoManager: undoManager, model: model, redoValue: 1) { note.text = "another" }
+        // note.text is "changed" at undo time → replace(\.index, with: -1).
+        cycle(undoManager: undoManager, model: model, redoValue: 1, undoValue: -1) { note.text = "changed" }
+        // After the first cycle, the chain no longer reads note.text.
+        cycle(undoManager: undoManager, model: model, redoValue: 1, undoValue: -1) { note.text = "another" }
     }
 
     // MARK: - Value type capture semantics
@@ -186,7 +190,10 @@ struct EscapingClosureTests {
         #expect(model.index == 10)
     }
 
-    @Test("value type explicitly captured, independent of original")
+    /// Explicit capture list `[restoreValue]` snaps the value when the closure is created
+    /// (inside the action, during `withUndoTracking`). Mutations after `withUndoTracking`
+    /// have no effect — the frozen value is used at every undo.
+    @Test("value type explicitly captured, immune to later mutations")
     func valueTypeCaptureIndependentOfOriginalExplicitCopy() {
         let undoManager = UndoManager()
         let model = Model()
@@ -199,8 +206,9 @@ struct EscapingClosureTests {
                 target.replace(\.index, with: restoreValue)
             }
         }
-
-        restoreValue = 999
+        
+        // mutate before undo tracking - this value is captured.
+        restoreValue = 7777
 
         withUndoTracking(undoManager) {
             component
@@ -208,11 +216,31 @@ struct EscapingClosureTests {
 
         #expect(model.index == 10)
 
-        cycle(undoManager: undoManager, model: model, redoValue: 10, undoValue: 999) { restoreValue = 123 }
-        cycle(undoManager: undoManager, model: model, redoValue: 10, undoValue: 999) { restoreValue = 456 }
+        // Mutate AFTER withUndoTracking — explicit capture already snapped 7777.
+        restoreValue = 999
+
+        undoManager.undo()
+        // Explicit capture: uses the snapshotted value 7777, not the mutated 999.
+        #expect(model.index == 7777)
+
+        undoManager.redo()
+        #expect(model.index == 10)
+
+        // Mutate again — still no effect on the frozen capture.
+        restoreValue = 555
+
+        undoManager.undo()
+        #expect(model.index == 7777)
+
+        undoManager.redo()
+        #expect(model.index == 10)
     }
 
-    @Test("value type implicitly captured, independent of original")
+    /// `makeUndoComponent` is `@escaping` — called at undo time, so `restoreValue`
+    /// is read when undo fires, not when `registerUndo` is called.
+    /// After the first undo–redo–undo cycle, the chain uses `replace`’s local `var value`
+    /// (the old index), so later mutations to `restoreValue` have no effect.
+    @Test("value type implicitly captured at undo time")
     func valueTypeCaptureIndependentOfOriginal() {
         let undoManager = UndoManager()
         let model = Model()
@@ -234,12 +262,17 @@ struct EscapingClosureTests {
 
         #expect(model.index == 10)
 
-        cycle(undoManager: undoManager, model: model, redoValue: 10, undoValue: 20) { restoreValue = 123 }
-        cycle(undoManager: undoManager, model: model, redoValue: 10, undoValue: 20) { restoreValue = 456 }
+        // First undo reads restoreValue = 123 (just set by mutate).
+        cycle(undoManager: undoManager, model: model, redoValue: 10, undoValue: 123) { restoreValue = 123 }
+        // After the first cycle, the undo chain no longer references restoreValue
+        // — it uses replace’s local var value (= 123). Mutate to 456 has no effect.
+        cycle(undoManager: undoManager, model: model, redoValue: 10, undoValue: 123) { restoreValue = 456 }
     }
 
     // MARK: - Multiple cycles with captured references
 
+    /// Reference-type state read inside `makeUndoComponent` is evaluated at undo time across cycles.
+    /// Mutating `metadata.label` before undo changes the computed restore value.
     @Test("multiple cycles with persistent captured reference")
     func multipleCyclesWithPersistentCapturedReference() {
         let undoManager = UndoManager()
@@ -266,8 +299,10 @@ struct EscapingClosureTests {
         #expect(model.index == 100)
         #expect(metadata.label == "undo-step")
 
-        cycle(undoManager: undoManager, model: model, redoValue: 100) { metadata.label = "changed" }
-        cycle(undoManager: undoManager, model: model, redoValue: 100) { metadata.label = "reset" }
+        // metadata.label is "changed" at undo time → restoreValue = -1.
+        cycle(undoManager: undoManager, model: model, redoValue: 100, undoValue: -1) { metadata.label = "changed" }
+        // After the first cycle, the chain no longer reads metadata.label.
+        cycle(undoManager: undoManager, model: model, redoValue: 100, undoValue: -1) { metadata.label = "reset" }
     }
 
     // MARK: - Multiple UndoGroups with shared state
@@ -395,6 +430,117 @@ struct EscapingClosureTests {
 
         #expect(oldManager?.canUndo == true)
         oldManager?.undo()
+        #expect(model.index == 0)
+    }
+
+    // MARK: - Lazy execution of makeUndoComponent
+
+    /// `makeUndoComponent` is stored as an `@escaping` closure and called at undo time,
+    /// not at registration time. The closure body should not execute until undo fires.
+    @Test("makeUndoComponent executes lazily at undo time, not at registration time")
+    func makeUndoComponentExecutesLazilyAtUndoTime() {
+        let undoManager = UndoManager()
+        let model = Model()
+        var executionCount = 0
+
+        let component = UndoComponent(target: model) { target, withAnimation, registerUndo in
+            target.index = 50
+            registerUndo {
+                // This body must not run until undo fires.
+                executionCount += 1
+                return target.replace(\.index, with: 0)
+            }
+        }.named("Lazy")
+
+        withUndoTracking(undoManager) {
+            component
+        }
+
+        // makeUndoComponent has NOT executed yet — it was stored, not called.
+        #expect(executionCount == 0)
+        #expect(model.index == 50)
+
+        // Now undo fires — the closure body executes.
+        undoManager.undo()
+        #expect(executionCount == 1)
+        #expect(model.index == 0)
+
+        // Redo: a new makeUndoComponent is registered; the original has already run.
+        undoManager.redo()
+        #expect(executionCount == 1) // unchanged — original closure already consumed
+        #expect(model.index == 50)
+    }
+
+    /// When the captured var changes multiple times between registration and undo,
+    /// the undo always sees the latest value (not any intermediate one).
+    @Test("makeUndoComponent sees latest value after multiple mutations")
+    func makeUndoComponentSeesLatestValueAfterMultipleMutations() {
+        let undoManager = UndoManager()
+        let model = Model()
+        var restoreValue = 0
+
+        let component = UndoComponent(target: model) { target, withAnimation, registerUndo in
+            target.index = 100
+            registerUndo {
+                target.replace(\.index, with: restoreValue)
+            }
+        }.named("MultiMut")
+
+        withUndoTracking(undoManager) {
+            component
+        }
+
+        #expect(model.index == 100)
+
+        // Mutate restoreValue several times before undoing.
+        restoreValue = 11
+        restoreValue = 22
+        restoreValue = 33
+
+        // Undo reads the latest value (33), not any intermediate value.
+        undoManager.undo()
+        #expect(model.index == 33)
+
+        // Redo restores the old index (100) that was captured by replace during undo.
+        undoManager.redo()
+        #expect(model.index == 100)
+    }
+
+    /// Multiple captured variables are each read at their latest value at undo time.
+    /// The redo restores the old index captured by `replace` during undo, not by
+    /// re-executing the forward action — so `a`'s mutation after `withUndoTracking`
+    /// is visible only if the forward action runs again (not on redo).
+    @Test("multiple captured vars each read at latest value at undo time")
+    func multipleCapturedVarsEachReadAtLatestValueAtUndoTime() {
+        let undoManager = UndoManager()
+        undoManager.groupsByEvent = false
+        let model = Model()
+        var a = 0, b = 0
+
+        undoManager.beginUndoGrouping()
+        withUndoTracking(undoManager) {
+            UndoComponent(target: model) { target, withAnimation, registerUndo in
+                target.index = a
+                registerUndo {
+                    target.replace(\.index, with: b)
+                }
+            }.named("MultiVar")
+        }
+        undoManager.endUndoGrouping()
+
+        #expect(model.index == 0) // a = 0 at execution time
+
+        // Mutate both vars before undo.
+        a = 7
+        b = 77
+
+        // Undo reads b = 77 at undo time → replace with 77.
+        undoManager.undo()
+        #expect(model.index == 77)
+
+        // Redo restores the old index (0) captured by `replace` during undo.
+        // It does NOT re-execute the forward action, so a = 7 is not observed here.
+        undoManager.redo()
         #expect(model.index == 0)
     }
 
