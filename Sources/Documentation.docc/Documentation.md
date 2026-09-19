@@ -50,10 +50,10 @@ final class Counter: UndoTracking {
 ### Closure Parameters
 
 - term target: The instance on which the action is performed.  
-- term withAnimation: A closure that runs its block with animation if ``UndoComponent/animated()`` was called. You can ignore it if you don’t need animation.  
+- term withAnimation: A closure that runs its block with animation if ``UndoComponent/animated(_:)`` was called. You can ignore it if you don’t need animation.  
 - term registerUndo: A closure that takes a zero-argument function—in it, register the inverse operation to be executed on undo.
 
-Modifiers applied to the returned ``UndoComponent`` (like ``UndoComponent/named(_:)`` or ``UndoComponent/animated()``) are preserved when the component is executed.
+Modifiers applied to the returned ``UndoComponent`` (like ``UndoComponent/named(_:)`` or ``UndoComponent/animated(_:)``) are preserved when the component is executed.
 
 ## Topics
 

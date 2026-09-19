@@ -73,7 +73,7 @@ public struct UndoComponent<Target> where Target: AnyObject {
     ///
     /// - term withAnimation: The conditional `withAnimation` block.
     ///
-    ///     Similar to that in `SwiftUI`, functions are executed with animation attached when ``UndoComponent/animated()``.
+    ///     Similar to that in `SwiftUI`, functions are executed with animation attached when ``UndoComponent/animated(_:)``.
     ///
     ///     You can choose to ignore this parameter if animation is not required.
     ///

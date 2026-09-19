@@ -14,14 +14,14 @@ withUndoTracking(undoManager) {
 }
 ```
 
-- `withUndoTracking(_:)` opens a builder closure that returns an `UndoComponent`.
+- [`withUndoTracking(_:)`](https://vaida12345.github.io/UndoTracking/documentation/undotracking/withundotracking(_:builder:)) opens a builder closure that returns an `UndoComponent`.
 - You can chain modifiers on the component:
   - `named(_:)` sets the undo/redo action’s name.  
   - `animated()` marks the action to run inside a `withAnimation` block (when used in SwiftUI).
 
 ## UndoTracking Protocol
 
-Conform your class to `UndoTracking` (no requirements other than being a class) to gain a suite of built-in undo components, such as `replace(_:with:)`, `insert(_:at:)`, and so on. These methods return `UndoComponent` instances that you can use inside `withUndoTracking(_:)`.
+Conform your class to `UndoTracking` (no requirements other than being a class) to gain a suite of built-in undo components, such as [`replace(_:with:)`](https://vaida12345.github.io/UndoTracking/documentation/undotracking/undotracking/replace(_:with:)/), [`insert(_:at:)`](https://vaida12345.github.io/UndoTracking/documentation/undotracking/undotracking/insert(_:at:to:)/), and so on. These methods return `UndoComponent` instances that you can use inside `withUndoTracking(_:)`.
 
 
 ## Creating Custom UndoComponents
@@ -77,4 +77,4 @@ https://github.com/Vaida12345/UndoTracking.git
 
 ## Documentation
 
-This package uses [DocC](https://www.swift.org/documentation/docc/) for documentation.
+This package uses [DocC](https://www.swift.org/documentation/docc/) for documentation, read on [Github](https://vaida12345.github.io/UndoTracking/documentation/undotracking/).
