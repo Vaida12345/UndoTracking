@@ -16,6 +16,34 @@ import Testing
 @MainActor
 struct UndoGrouping {
     
+    @MainActor
+    @Test func groupOrder() {
+        let undoManager = UndoManager()
+        let model = Model()
+        model.stack = .init()
+        
+        withUndoTracking(undoManager) {
+            UndoGroup("Append") {
+                model.increment()
+                model.decrement()
+            }
+        }
+        
+        #expect(model.index == 0)
+        #expect(model.stack!.contents == [1, -1])
+        model.stack!.contents.removeAll()
+        
+        undoManager.undo()
+        #expect(model.index == 0)
+        #expect(model.stack!.contents == [1, -1]) // this means it is reversed: call opposite of decrement first (increment.)
+        model.stack!.contents.removeAll()
+        
+        undoManager.redo()
+        #expect(model.index == 0)
+        #expect(model.stack!.contents == [1, -1])
+        model.stack!.contents.removeAll()
+    }
+    
     @Test func testContextDescription() {
         #expect(_UndoComponentContext(animated: true, title: "123").description == "Content(123, animate)")
         #expect(_UndoComponentContext(title: "123").description == "Content(123)")

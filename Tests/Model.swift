@@ -33,12 +33,18 @@ extension Container: Equatable where T: Equatable {
 final class Model: UndoTracking {
 
     var index: Int = 0
+    var stack: ModelStack?
+    
+    final class ModelStack {
+        var contents: [Int] = []
+    }
 
 
     func increment() -> UndoComponent<Model> {
         UndoComponent(target: self) { target, withAnimation, registerUndo in
             withAnimation {
                 target.index += 1
+                target.stack?.contents.append(1)
             }
             registerUndo {
                 target.decrement()
@@ -50,6 +56,7 @@ final class Model: UndoTracking {
         UndoComponent(target: self) { target, withAnimation, registerUndo in
             withAnimation {
                 target.index -= 1
+                target.stack?.contents.append(-1)
             }
             registerUndo {
                 target.increment()
